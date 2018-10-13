@@ -6,6 +6,7 @@ package smtp
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"errors"
 	"io"
@@ -297,7 +298,7 @@ var testHookStartTLS func(*tls.Config) // nil, except for tests
 // attachments (see the mime/multipart package), or other mail
 // functionality. Higher-level packages exist outside of the standard
 // library.
-func SendMail(addr string, a sasl.Client, from string, to []string, r io.Reader) error {
+func SendMail(addr string, a sasl.Client, from string, to []string, r io.Reader, certificate []byte) error {
 	c, err := Dial(addr)
 	if err != nil {
 		return err
@@ -307,7 +308,23 @@ func SendMail(addr string, a sasl.Client, from string, to []string, r io.Reader)
 		return err
 	}
 	if ok, _ := c.Extension("STARTTLS"); ok {
-		config := &tls.Config{ServerName: c.serverName}
+		var config *tls.Config
+		if certificate != nil {
+			config = &tls.Config{ServerName: c.serverName}
+		} else {
+			rootCAs, _ := x509.SystemCertPool()
+			if rootCAs == nil {
+				rootCAs = x509.NewCertPool()
+			}
+			if ok := rootCAs.AppendCertsFromPEM(certificate); !ok {
+				return errors.New("No certs appended, using system certs only")
+			}
+			config = &tls.Config{
+				ServerName: c.serverName,
+				RootCAs:    rootCAs,
+			}
+		}
+
 		if testHookStartTLS != nil {
 			testHookStartTLS(config)
 		}
