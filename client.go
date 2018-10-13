@@ -309,7 +309,7 @@ func SendMail(addr string, a sasl.Client, from string, to []string, r io.Reader,
 	}
 	if ok, _ := c.Extension("STARTTLS"); ok {
 		var config *tls.Config
-		if certificate != nil {
+		if len(certificate) == 0 {
 			config = &tls.Config{ServerName: c.serverName}
 		} else {
 			rootCAs, _ := x509.SystemCertPool()
