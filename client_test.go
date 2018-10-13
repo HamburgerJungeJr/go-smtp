@@ -389,12 +389,13 @@ func TestSendMail(t *testing.T) {
 		}
 	}(strings.Split(server, "\r\n"))
 
+	var cert []byte
 	err = SendMail(l.Addr().String(), nil, "test@example.com", []string{"other@example.com"}, strings.NewReader(strings.Replace(`From: test@example.com
 To: other@example.com
 Subject: SendMail test
 
 SendMail is working for me.
-`, "\n", "\r\n", -1)))
+`, "\n", "\r\n", -1)), cert)
 
 	if err != nil {
 		t.Errorf("%v", err)
@@ -627,7 +628,8 @@ func sendMail(hostPort string) error {
 	auth := sasl.NewPlainClient("", "", "")
 	from := "joe1@example.com"
 	to := []string{"joe2@example.com"}
-	return SendMail(hostPort, auth, from, to, strings.NewReader("Subject: test\n\nhowdy!"))
+	var cert []byte
+	return SendMail(hostPort, auth, from, to, strings.NewReader("Subject: test\n\nhowdy!"), cert)
 }
 
 // (copied from net/http/httptest)
